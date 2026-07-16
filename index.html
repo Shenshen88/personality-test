@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>性格倾向探索 · 轻量版MBTI</title>
+<style>
+/* ============================================================
+   ===== CSS 变量定义区（冷静蓝灰 + 温暖米白基调）=====
+   ============================================================ */
+:root {
+  --bg-primary: #eef2f7;            /* 页面背景：蓝灰 */
+  --bg-card: #ffffff;                /* 卡片背景：纯白 */
+  --color-primary: #4a6fa5;          /* 主色：蓝灰（冷静专业） */
+  --color-primary-light: #6b8fc0;    /* 主色浅 */
+  --color-primary-dark: #3a5a8a;     /* 主色深 */
+  --color-accent: #7b9cc4;           /* 辅色：浅蓝 */
+  --color-warm: #d4a574;             /* 暖色：米棕（温暖感） */
+  --color-warm-light: #e8c9a0;       /* 暖色浅 */
+  --color-text: #2c3e50;             /* 正文文字 */
+  --color-text-light: #8a9ba8;       /* 次要文字 */
+  --color-border: #e0e7ee;           /* 边框色 */
+  --shadow-sm: 0 2px 8px rgba(74, 111, 165, 0.08);
+  --shadow-md: 0 8px 30px rgba(74, 111, 165, 0.12);
+  --radius: 20px;                    /* 大圆角 */
+  --radius-sm: 12px;                 /* 小圆角 */
+  --transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1); /* 统一过渡曲线 */
+}
+
+/* ===== 全局重置 ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { -webkit-tap-highlight-color: transparent; } /* 移除移动端点击高亮 */
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: linear-gradient(160deg, #eef2f7 0%, #e2e8f0 50%, #eaeef3 100%);
+  color: var(--color-text);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  line-height: 1.6;
+}
+
+/* ============================================================
+   ===== 主容器与页面切换系统 =====
+   ============================================================ */
+#app {
+  width: 100%;
+  max-width: 520px;
+  position: relative;
+}
+
+.page {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  padding: 40px 30px;
+  display: none;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity var(--transition), transform var(--transition);
+}
+
+.page.active {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ============================================================
+   ===== 首页样式 =====
+   ============================================================ */
+.welcome-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  border-radius: 50%;
+  font-size: 36px;
+  box-shadow: 0 8px 24px rgba(74, 111, 165, 0.3);
+  animation: pulse 3s ease-in-out infinite; /* 呼吸动效 */
+}
+
+.welcome-title {
+  text-align: center;
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.welcome-subtitle {
+  text-align: center;
+  font-size: 14px;
+  color: var(--color-text-light);
+  margin-bottom: 30px;
+}
+
+/* 维度列表 */
+.dimension-list { list-style: none; margin-bottom: 30px; }
+
+.dimension-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  margin-bottom: 10px;
+  font-size: 14px;
+  transition: transform var(--transition);
+}
+
+.dimension-item:hover { transform: translateX(4px); }
+.dimension-item .label { font-weight: 600; }
+.dimension-item .versus { color: var(--color-text-light); font-size: 13px; }
+
+/* ============================================================
+   ===== 按钮通用样式 =====
+   ============================================================ */
+.btn {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  text-align: center;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(74, 111, 165, 0.35);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(74, 111, 165, 0.45);
+}
+
+.btn-primary:active { transform: translateY(0) scale(0.98); } /* 点击反馈 */
+
+/* ============================================================
+   ===== 答题页样式 =====
+   ============================================================ */
+.quiz-header { margin-bottom: 24px; }
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--color-text-light);
+  margin-bottom: 8px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-primary);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+  border-radius: 3px;
+  transition: width 0.4s ease;
+  width: 0%;
+}
+
+/* 题目容器（带切换动画） */
+.question-container {
+  min-height: 280px;
+  position: relative;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.question-text {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.option-group { display: flex; flex-direction: column; gap: 12px; }
+
+/* 选项卡片 */
+.option-card {
+  padding: 18px 20px;
+  background: var(--bg-primary);
+  border: 2px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  user-select: none;
+}
+
+.option-card:hover {
+  border-color: var(--color-accent);
+  background: #e8eef5;
+  transform: translateX(4px); /* 悬停右移 */
+}
+
+.option-card:active {
+  transform: scale(0.98); /* 点击缩放反馈 */
+  background: #d8e4f0;
+}
+
+.option-marker {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-primary);
+  flex-shrink: 0;
+  border: 2px solid var(--color-border);
+  transition: all var(--transition);
+}
+
+.option-card:hover .option-marker {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+/* 答题页底部 */
+.quiz-footer {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-back {
+  background: none;
+  border: none;
+  color: var(--color-text-light);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 8px 0;
+  transition: color var(--transition);
+}
+
+.btn-back:hover { color: var(--color-primary); }
+.btn-back:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ============================================================
+   ===== 结果页样式 =====
+   ============================================================ */
+.result-header { text-align: center; margin-bottom: 24px; }
+
+.result-type-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  color: #fff;
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 24px rgba(74, 111, 165, 0.35);
+  letter-spacing: 1px;
+}
+
+.result-type-name { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+.result-type-role { font-size: 14px; color: var(--color-warm); font-weight: 600; margin-bottom: 4px; }
+.last-test-time { font-size: 12px; color: var(--color-text-light); margin-bottom: 20px; }
+
+/* 得分可视化（柱状图式得分条） */
+.score-chart { margin-bottom: 24px; }
+.score-dimension { margin-bottom: 16px; }
+
+.score-dimension-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-light);
+  margin-bottom: 6px;
+}
+
+.score-bar-container {
+  display: flex;
+  height: 34px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+.score-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 0;
+}
+
+.score-bar.dominant {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  color: #fff;
+}
+
+.score-bar.recessive {
+  background: #d1dce8;
+  color: #6a7d8e;
+}
+
+/* 性格解读卡片 */
+.result-description {
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  padding: 20px;
+  font-size: 14px;
+  line-height: 1.8;
+  margin-bottom: 20px;
+}
+
+/* 关键词标签 */
+.result-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+
+.result-tag {
+  padding: 6px 14px;
+  background: #e8eef5;
+  border-radius: 20px;
+  font-size: 12px;
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+/* ============================================================
+   ===== 密码门禁页样式 =====
+   ============================================================ */
+.auth-icon {
+  width: 70px;
+  height: 70px;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  border-radius: 50%;
+  font-size: 30px;
+  box-shadow: 0 8px 24px rgba(74, 111, 165, 0.3);
+}
+
+.auth-title {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.auth-subtitle {
+  text-align: center;
+  font-size: 14px;
+  color: var(--color-text-light);
+  margin-bottom: 28px;
+}
+
+.auth-input {
+  width: 100%;
+  padding: 16px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 16px;
+  color: var(--color-text);
+  background: var(--bg-primary);
+  transition: all var(--transition);
+  text-align: center;
+  letter-spacing: 4px;
+  margin-bottom: 16px;
+}
+
+.auth-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: var(--bg-card);
+  box-shadow: 0 0 0 3px rgba(74, 111, 165, 0.1);
+}
+
+.auth-input::placeholder {
+  letter-spacing: 0;
+  color: var(--color-text-light);
+}
+
+.auth-error {
+  text-align: center;
+  font-size: 13px;
+  color: #e74c3c;
+  margin-top: 12px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  min-height: 20px;
+}
+
+.auth-error.show { opacity: 1; }
+
+/* ===== 用户标签徽章 ===== */
+.user-tag-badge {
+  display: inline-block;
+  padding: 6px 16px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 20px;
+  margin: 0 auto 16px;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(74, 111, 165, 0.25);
+}
+
+/* ===== 退出登录按钮 ===== */
+.btn-logout {
+  display: block;
+  margin: 24px auto 0;
+  padding: 8px 20px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-light);
+  font-size: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-logout:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* ===== 密码验证中状态 ===== */
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   ===== 动画定义 =====
+   ============================================================ */
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+/* ============================================================
+   ===== 响应式（移动端适配）=====
+   ============================================================ */
+@media (max-width: 480px) {
+  body { padding: 12px; }
+  .page { padding: 30px 20px; border-radius: 16px; }
+  .welcome-title { font-size: 22px; }
+  .welcome-icon { width: 68px; height: 68px; font-size: 30px; }
+  .question-text { font-size: 16px; }
+  .option-card { padding: 16px; font-size: 14px; }
+  .option-marker { width: 28px; height: 28px; font-size: 13px; }
+  .result-type-badge { width: 76px; height: 76px; font-size: 22px; }
+  .result-type-name { font-size: 20px; }
+  .score-bar { font-size: 11px; }
+  .dimension-item { padding: 12px 14px; font-size: 13px; }
+  .auth-title { font-size: 20px; }
+  .auth-icon { width: 60px; height: 60px; font-size: 26px; }
+  .auth-input { padding: 14px; font-size: 15px; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============================================================
+       ===== 密码门禁页 =====
+       ============================================================ -->
+  <div id="page-auth" class="page active">
+    <div class="auth-icon">🔐</div>
+    <h1 class="auth-title">访问验证</h1>
+    <p class="auth-subtitle">请输入访问密码</p>
+    <input type="password" class="auth-input" id="auth-password-input"
+           placeholder="输入密码" maxlength="20"
+           onkeypress="if(event.key==='Enter') submitPassword()">
+    <button class="btn btn-primary" onclick="submitPassword()">进入</button>
+    <div class="auth-error" id="auth-error">密码不正确，请重新输入</div>
+  </div>
+
+  <!-- ============================================================
+       ===== 首页 =====
+       ============================================================ -->
+  <div id="page-welcome" class="page">
+    <div class="welcome-icon">🧭</div>
+    <h1 class="welcome-title">性格倾向探索</h1>
+    <p class="welcome-subtitle">16道题 · 4个维度 · 发现真实的你</p>
+
+    <!-- 用户标签徽章（登录后显示） -->
+    <div style="text-align:center;">
+      <span id="user-tag-badge" class="user-tag-badge" style="display:none;"></span>
+    </div>
+
+    <ul class="dimension-list">
+      <li class="dimension-item">
+        <span class="label">能量获取</span>
+        <span class="versus">内向 I &#8646; 外向 E</span>
+      </li>
+      <li class="dimension-item">
+        <span class="label">信息接收</span>
+        <span class="versus">感觉 S &#8646; 直觉 N</span>
+      </li>
+      <li class="dimension-item">
+        <span class="label">决策方式</span>
+        <span class="versus">理性 T &#8646; 感性 F</span>
+      </li>
+      <li class="dimension-item">
+        <span class="label">生活方式</span>
+        <span class="versus">计划 J &#8646; 随性 P</span>
+      </li>
+    </ul>
+
+    <button class="btn btn-primary" onclick="startQuiz()">开始探索之旅</button>
+    <div id="welcome-last-test" style="text-align:center; margin-top:16px; font-size:12px; color:var(--color-text-light);"></div>
+    <button class="btn-logout" onclick="logout()">退出登录</button>
+  </div>
+
+  <!-- ============================================================
+       ===== 答题页 =====
+       ============================================================ -->
+  <div id="page-quiz" class="page">
+    <div class="quiz-header">
+      <div class="progress-info">
+        <span id="progress-text">第 1 / 16 题</span>
+        <span id="progress-percent">6%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+    </div>
+
+    <div class="question-container" id="question-container">
+      <div class="question-text" id="question-text"></div>
+      <div class="option-group" id="option-group"></div>
+    </div>
+
+    <div class="quiz-footer">
+      <button class="btn-back" id="btn-back" onclick="prevQuestion()">&#8592; 上一题</button>
+      <span style="font-size:12px; color:var(--color-text-light);">选择后自动进入下一题</span>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       ===== 结果页 =====
+       ============================================================ -->
+  <div id="page-result" class="page">
+    <div class="result-header">
+      <div class="result-type-badge" id="result-badge"></div>
+      <div class="result-type-name" id="result-name"></div>
+      <div class="result-type-role" id="result-role"></div>
+      <div class="last-test-time" id="last-test-time"></div>
+    </div>
+
+    <div class="score-chart" id="score-chart"></div>
+
+    <div class="result-description" id="result-description"></div>
+
+    <div class="result-tags" id="result-tags"></div>
+
+    <button class="btn btn-primary" onclick="resetTest()">重新测试</button>
+  </div>
+
+</div>
+
+<script>
+/* ============================================================
+   ===== 性格倾向探索 · 核心逻辑（原生 ES6+）=====
+   ============================================================
+   架构概览：
+   1. 题库数据 questions[]        —— 16道二选一情景题
+   2. 性格类型 personalityTypes{} —— 16种结果映射
+   3. 全局状态                     —— 题目索引 / 答案数组 / 过渡锁
+   4. 页面路由                     —— showPage() 三页切换
+   5. 答题逻辑                     —— renderQuestion / selectOption / prevQuestion
+   6. 结果计算                     —— calculateAndShowResult / renderResult
+   7. 数据持久化                   —— localStorage 读写
+   8. 初始化                       —— init()
+   ============================================================ */
+
+
+/* ===== 1. 题库数据（16题，每维度4题）=====
+   每题结构：
+   { id, dim(所属维度), text(题目), a:{text, trait}, b:{text, trait} }
+*/
+const questions = [
+  // --- 维度1: 能量获取 (E外向 vs I内向) ---
+  { id:1, dim:"EI", text:"周末终于到了，你最想怎么度过？",
+    a:{text:"约上三五好友，去热闹的聚会或户外活动", trait:"E"},
+    b:{text:"独自在家看书、听音乐，享受安静时光", trait:"I"} },
+  { id:2, dim:"EI", text:"在一个陌生的大型社交场合，你的第一反应是？",
+    a:{text:"兴奋地主动认识新朋友，融入氛围", trait:"E"},
+    b:{text:"找个安静的角落，等别人来搭话", trait:"I"} },
+  { id:3, dim:"EI", text:"连续高强度工作一周后，你如何恢复精力？",
+    a:{text:"约朋友出去吃饭聊天，在互动中充电", trait:"E"},
+    b:{text:"关掉手机，一个人待着，在独处中回血", trait:"I"} },
+  { id:4, dim:"EI", text:"团队讨论时，你更倾向于？",
+    a:{text:"边说边想，在交流中理清思路", trait:"E"},
+    b:{text:"先在脑中想清楚，再开口表达观点", trait:"I"} },
+
+  // --- 维度2: 信息接收 (N直觉 vs S感觉) ---
+  { id:5, dim:"NS", text:"你更欣赏哪种类型的人？",
+    a:{text:"有远见、善于看到未来可能性的人", trait:"N"},
+    b:{text:"脚踏实地、注重事实和经验的人", trait:"S"} },
+  { id:6, dim:"NS", text:"面对一个新项目，你首先关注什么？",
+    a:{text:"项目的长远愿景和创新突破点", trait:"N"},
+    b:{text:"项目的具体步骤和可执行细节", trait:"S"} },
+  { id:7, dim:"NS", text:"阅读时你更喜欢哪类内容？",
+    a:{text:"探讨未来趋势和抽象理论的文章", trait:"N"},
+    b:{text:"有实际案例和操作指南的教程", trait:"S"} },
+  { id:8, dim:"NS", text:"别人跟你描述一件事时，你更在意？",
+    a:{text:"事情背后的深层含义和潜在联系", trait:"N"},
+    b:{text:"事情的具体事实、数据和经过", trait:"S"} },
+
+  // --- 维度3: 决策方式 (T理性 vs F感性) ---
+  { id:9, dim:"TF", text:"朋友遇到困难找你倾诉，你的第一反应是？",
+    a:{text:"分析问题根源，给出理性的解决方案", trait:"T"},
+    b:{text:"先共情，提供情感上的安慰和支持", trait:"F"} },
+  { id:10, dim:"TF", text:"做重要决定时，你更依赖什么？",
+    a:{text:"客观逻辑和数据分析", trait:"T"},
+    b:{text:"内心感受和个人价值观", trait:"F"} },
+  { id:11, dim:"TF", text:"评价一件事是否正确，你更看重？",
+    a:{text:"是否符合逻辑和公平原则", trait:"T"},
+    b:{text:"是否照顾到每个人的感受", trait:"F"} },
+  { id:12, dim:"TF", text:"团队出现分歧时，你倾向于？",
+    a:{text:"就事论事，用事实和数据说服对方", trait:"T"},
+    b:{text:"先缓和气氛，照顾各方的情绪", trait:"F"} },
+
+  // --- 维度4: 生活方式 (J计划 vs P随性) ---
+  { id:13, dim:"JP", text:"出门旅行前，你会？",
+    a:{text:"提前规划好行程，列好详细清单", trait:"J"},
+    b:{text:"大致定个方向，走到哪算哪", trait:"P"} },
+  { id:14, dim:"JP", text:"面对一个截止日期，你通常？",
+    a:{text:"提前开始，按计划逐步推进完成", trait:"J"},
+    b:{text:"在截止前找到状态，一鼓作气搞定", trait:"P"} },
+  { id:15, dim:"JP", text:"你的书桌/房间通常是什么状态？",
+    a:{text:"整齐有序，物品各有归处", trait:"J"},
+    b:{text:"看起来有点乱，但我知道东西在哪", trait:"P"} },
+  { id:16, dim:"JP", text:"周计划对你来说意味着什么？",
+    a:{text:"是必要的，按计划执行让我安心", trait:"J"},
+    b:{text:"是参考，我更喜欢保持灵活弹性", trait:"P"} },
+];
+
+
+/* ===== 2. 16种性格类型数据 =====
+   每种类型包含：name(中文名), role(角色定位), desc(50字+解读), tags(关键词)
+*/
+const personalityTypes = {
+  INTJ: {
+    name:"建筑师", role:"战略思考者",
+    desc:"你是天生的战略思考者，拥有极强的逻辑分析能力和长远规划意识。你善于在复杂信息中发现底层规律，独立自信且目标明确。在团队中你常被视为幕后军师，总能在关键时刻提出精准方案。但有时过于追求完美，容易忽视他人情感需求。",
+    tags:["独立思考","战略眼光","追求完美","高效执行"]
+  },
+  INTP: {
+    name:"逻辑学家", role:"理论构建者",
+    desc:"你是充满好奇心的理论构建者，热爱探索抽象概念和底层逻辑。你思维敏捷，善于发现事物间的隐秘联系，对'为什么'的追问永无止境。你享受独立思考的乐趣，不喜欢被条条框框束缚，但有时会因为想得太多而迟迟无法行动。",
+    tags:["逻辑严密","好奇心强","善于分析","思想自由"]
+  },
+  ENTJ: {
+    name:"指挥官", role:"天生的领导者",
+    desc:"你是天生的领导者，意志坚定、效率至上，善于将复杂目标拆解为可执行步骤。你具备出色的全局视野和组织能力，能在压力下做出果断决策。你追求卓越，对自己和他人都有很高要求，但需要注意在追求目标时不要过于强势。",
+    tags:["领导力","果断","高效","全局视野"]
+  },
+  ENTP: {
+    name:"辩论家", role:"思维探险家",
+    desc:"你是充满创意的思维探险家，热爱智力挑战和观点碰撞。你思维活跃，善于从不同角度切入问题，总能提出令人耳目一新的想法。你喜欢打破常规，讨厌墨守成规，但有时会因为兴趣广泛而难以坚持到底，需要注意聚焦。",
+    tags:["创意发散","善于辩论","思维敏捷","喜欢挑战"]
+  },
+  INFJ: {
+    name:"提倡者", role:"理想主义践行者",
+    desc:"你是安静而有力量的理想主义者，拥有敏锐的直觉和深厚的共情能力。你善于洞察他人内心，对人类命运有着深切关怀。你追求有意义的联结和深远的影响力，做事有计划且有原则，是值得信赖的灵魂伙伴。",
+    tags:["洞察力强","理想主义","共情能力","原则坚定"]
+  },
+  INFP: {
+    name:"调停者", role:"温柔的理想主义者",
+    desc:"你是温柔的理想主义者，内心世界丰富而深邃。你忠于自己的价值观，对美和真善有着天然的敏感。你善于共情，总想理解每个人独特的故事，追求和谐而真实的联结。你富有创造力，但有时会因为理想与现实落差而感到失落。",
+    tags:["理想主义","共情力强","创造力","追求和谐"]
+  },
+  ENFJ: {
+    name:"主人公", role:"温暖的引领者",
+    desc:"你是温暖而有力量的引领者，天生擅长鼓舞和感召他人。你拥有强烈的同理心和责任感，总能敏锐察觉团队中每个人的状态。你善于沟通，乐于帮助他人成长，是天生的导师和领袖，但需要注意在照顾他人时别忽略了自己。",
+    tags:["同理心","领导力","善于沟通","乐于助人"]
+  },
+  ENFP: {
+    name:"竞选者", role:"热情的创意发电机",
+    desc:"你是热情洋溢的创意发电机，对生活充满好奇和热情。你思维跳跃，善于在看似无关的事物间建立联系，总能带给周围人惊喜和快乐。你追求自由和可能性，讨厌重复枯燥的日常，但需要学会在热情退却后依然坚持。",
+    tags:["热情洋溢","创意无限","善于社交","追求自由"]
+  },
+  ISTJ: {
+    name:"物流师", role:"可靠的执行者",
+    desc:"你是踏实可靠的执行者，注重秩序、事实和传统。你做事严谨有条理，言出必行，是团队中最值得信赖的基石。你尊重规则和经验，善于在既有框架内高效完成工作，但有时会显得过于保守，需要尝试拥抱变化。",
+    tags:["严谨可靠","注重事实","有条不紊","责任心强"]
+  },
+  ISFJ: {
+    name:"守护者", role:"温暖的守护者",
+    desc:"你是温暖细腻的守护者，默默为身边的人付出关怀。你观察力强，记忆力好，总能记住他人的需求和喜好。你做事认真负责，追求和谐稳定，是朋友和家人最坚实的后盾，但要学会适当表达自己的需要。",
+    tags:["细心体贴","默默奉献","责任心强","追求稳定"]
+  },
+  ESTJ: {
+    name:"总经理", role:"果断的组织者",
+    desc:"你是果断务实的组织者，善于管理和执行。你重视秩序、效率和规则，能够迅速做出判断并推动事情落地。你天生具备管理才能，在混乱中能快速建立秩序，但有时需要学习倾听不同声音，给他人更多弹性。",
+    tags:["果断务实","善于管理","重视秩序","高效执行"]
+  },
+  ESFJ: {
+    name:"执政官", role:"热心肠的社交达人",
+    desc:"你是热心肠的社交达人，天生关注他人的感受和需求。你善于营造和谐氛围，乐于组织活动、照顾他人，是朋友圈中的温暖中心。你重视传统和人际关系，做事有条不紊，但需要学会在照顾他人时不忘关照自己。",
+    tags:["热心助人","善于社交","重视和谐","责任感强"]
+  },
+  ISTP: {
+    name:"鉴赏家", role:"冷静的实践者",
+    desc:"你是冷静灵活的实践者，善于用双手和工具解决实际问题。你思维清晰，应变能力强，在危机时刻总能保持镇定。你享受探索和动手的过程，不喜欢理论和空谈，追求高效和自由，但有时需要注意与他人沟通你的想法。",
+    tags:["冷静灵活","动手能力强","善于应变","追求自由"]
+  },
+  ISFP: {
+    name:"探险家", role:"自由的艺术家",
+    desc:"你是敏感而自由的艺术家，对美和体验有着天然的感知力。你活在当下，善于发现生活中的细微之美，不喜欢被规则束缚。你温和而独立，重视个人空间和真实感受，有独特的审美和创造力，但需要学会更好地规划。",
+    tags:["审美敏锐","活在当下","温和独立","创造力强"]
+  },
+  ESTP: {
+    name:"企业家", role:"行动的冒险家",
+    desc:"你是充满行动力的冒险家，活在当下，享受刺激和挑战。你思维敏捷，善于在瞬息万变的环境中抓住机会。你务实、直接、充满魅力，是天生的谈判者和行动派，但有时需要学习三思而后行，避免冲动决策。",
+    tags:["行动力强","善于应变","务实直接","充满魅力"]
+  },
+  ESFP: {
+    name:"表演者", role:"派对的灵魂",
+    desc:"你是热情洋溢的派对灵魂，天生善于享受生活和感染他人。你活在当下，对美和快乐有敏锐感知，总能让周围人感到轻松愉快。你善于交际，适应力强，是朋友圈中的开心果，但需要学会关注长远规划和深度思考。",
+    tags:["热情开朗","善于交际","适应力强","享受当下"]
+  },
+};
+
+
+/* ===== 3. 全局状态 ===== */
+let currentQuestionIndex = 0;  // 当前题目索引（0~15）
+let answers = [];               // 用户答案数组，存储每题选择的 trait（"E"/"I"/"N"/"S"/"T"/"F"/"J"/"P"）
+let isTransitioning = false;    // 过渡锁，防止快速连点导致动画错乱
+
+
+/* ===== 4. 页面路由：三页切换 ===== */
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+}
+
+
+/* ===== 5. 开始测试 ===== */
+function startQuiz() {
+  // 完全重置测试状态
+  currentQuestionIndex = 0;
+  answers = [];
+  isTransitioning = false;
+  showPage('page-quiz');
+  renderQuestion('init');
+}
+
+
+/* ===== 6. 渲染当前题目 =====
+   direction: 'next' | 'prev' | 'init' —— 控制切换动画方向
+*/
+function renderQuestion(direction) {
+  const q = questions[currentQuestionIndex];
+  const container = document.getElementById('question-container');
+
+  // 第一阶段：淡出当前内容
+  container.style.opacity = '0';
+  if (direction === 'next') {
+    container.style.transform = 'translateX(-20px)';
+  } else if (direction === 'prev') {
+    container.style.transform = 'translateX(20px)';
+  }
+
+  // 第二阶段：200ms 后替换内容并淡入
+  setTimeout(() => {
+    // 更新题目文本
+    document.getElementById('question-text').textContent = q.text;
+
+    // 更新选项（使用 onclick 内联绑定，确保每次渲染都重新绑定）
+    document.getElementById('option-group').innerHTML = `
+      <div class="option-card" onclick="selectOption('${q.a.trait}')">
+        <div class="option-marker">A</div>
+        <span>${q.a.text}</span>
+      </div>
+      <div class="option-card" onclick="selectOption('${q.b.trait}')">
+        <div class="option-marker">B</div>
+        <span>${q.b.text}</span>
+      </div>
+    `;
+
+    // 更新进度条
+    const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+    document.getElementById('progress-text').textContent =
+      `第 ${currentQuestionIndex + 1} / ${questions.length} 题`;
+    document.getElementById('progress-percent').textContent = `${Math.round(progress)}%`;
+    document.getElementById('progress-fill').style.width = `${progress}%`;
+
+    // 更新上一题按钮状态
+    document.getElementById('btn-back').disabled = (currentQuestionIndex === 0);
+
+    // 淡入新内容
+    container.style.opacity = '1';
+    container.style.transform = 'translateX(0)';
+    isTransitioning = false; // 释放过渡锁
+  }, 200);
+}
+
+
+/* ===== 7. 选择选项（点击后自动进入下一题）===== */
+function selectOption(trait) {
+  if (isTransitioning) return; // 过渡中，忽略点击
+  isTransitioning = true;
+
+  // 记录答案
+  answers[currentQuestionIndex] = trait;
+
+  // 判断是否为最后一题
+  if (currentQuestionIndex < questions.length - 1) {
+    currentQuestionIndex++;
+    renderQuestion('next');
+  } else {
+    // 所有题目完成 → 计算结果
+    setTimeout(() => {
+      calculateAndShowResult();
+    }, 300);
+  }
+}
+
+
+/* ===== 8. 返回上一题 ===== */
+function prevQuestion() {
+  if (currentQuestionIndex > 0 && !isTransitioning) {
+    isTransitioning = true;
+    currentQuestionIndex--;
+    renderQuestion('prev');
+  }
+}
+
+
+/* ===== 9. 计算得分并显示结果 ===== */
+function calculateAndShowResult() {
+  // --- 统计各维度得分 ---
+  const scores = { E:0, I:0, N:0, S:0, T:0, F:0, J:0, P:0 };
+  answers.forEach(trait => {
+    if (scores.hasOwnProperty(trait)) scores[trait]++;
+  });
+
+  // --- 确定性格类型（每维度取较高一方）---
+  const type =
+    (scores.E >= scores.I ? 'E' : 'I') +
+    (scores.N >= scores.S ? 'N' : 'S') +
+    (scores.T >= scores.F ? 'T' : 'F') +
+    (scores.J >= scores.P ? 'J' : 'P');
+
+  // --- 构建可视化维度数据 ---
+  const dimensions = [
+    { name:"能量获取",
+      left:{trait:"E", label:"外向 E", count:scores.E},
+      right:{trait:"I", label:"内向 I", count:scores.I} },
+    { name:"信息接收",
+      left:{trait:"N", label:"直觉 N", count:scores.N},
+      right:{trait:"S", label:"感觉 S", count:scores.S} },
+    { name:"决策方式",
+      left:{trait:"T", label:"理性 T", count:scores.T},
+      right:{trait:"F", label:"感性 F", count:scores.F} },
+    { name:"生活方式",
+      left:{trait:"J", label:"计划 J", count:scores.J},
+      right:{trait:"P", label:"随性 P", count:scores.P} },
+  ];
+
+  // --- 获取性格解读数据 ---
+  const personality = personalityTypes[type];
+
+  // --- 读取上次测试时间（在保存之前读取，确保拿到的是旧时间）---
+  const oldData = loadFromStorage();
+  const lastTestTime = oldData ? oldData.timestamp : null;
+
+  // --- 保存当前结果到 localStorage ---
+  saveToStorage({
+    type: type,
+    scores: scores,
+    timestamp: new Date().toISOString()
+  });
+
+  // --- 渲染结果页 ---
+  showPage('page-result');
+  renderResult(type, personality, dimensions, lastTestTime);
+}
+
+
+/* ===== 10. 渲染结果页 ===== */
+function renderResult(type, personality, dimensions, lastTestTime) {
+  // 类型徽章与标题
+  document.getElementById('result-badge').textContent = type;
+  document.getElementById('result-name').textContent = `${type} · ${personality.name}`;
+  document.getElementById('result-role').textContent = personality.role;
+
+  // 上次测试时间
+  const lastTimeEl = document.getElementById('last-test-time');
+  if (lastTestTime) {
+    const dt = new Date(lastTestTime);
+    const fmt = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+    lastTimeEl.textContent = `上次测试时间：${fmt}`;
+  } else {
+    lastTimeEl.textContent = '🎉 这是你的首次性格测试';
+  }
+
+  // 渲染得分条（柱状图式可视化）
+  const chartEl = document.getElementById('score-chart');
+  chartEl.innerHTML = dimensions.map(dim => {
+    const total = dim.left.count + dim.right.count || 1; // 防除零
+    const leftPct = Math.round((dim.left.count / total) * 100);
+    const rightPct = 100 - leftPct;
+    const leftDominant = dim.left.count >= dim.right.count;
+    // 百分比低于15%时不显示文字，避免溢出
+    const leftText = leftPct >= 15 ? `${dim.left.label} ${leftPct}%` : '';
+    const rightText = rightPct >= 15 ? `${dim.right.label} ${rightPct}%` : '';
+
+    return `
+      <div class="score-dimension">
+        <div class="score-dimension-label">${dim.name}</div>
+        <div class="score-bar-container">
+          <div class="score-bar ${leftDominant ? 'dominant' : 'recessive'}" data-target="${leftPct}" style="width:0%">
+            ${leftText}
+          </div>
+          <div class="score-bar ${!leftDominant ? 'dominant' : 'recessive'}" data-target="${rightPct}" style="width:0%">
+            ${rightText}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // 触发得分条动画（从0%过渡到目标宽度）
+  setTimeout(() => {
+    document.querySelectorAll('.score-bar').forEach(bar => {
+      bar.style.width = bar.dataset.target + '%';
+    });
+  }, 150);
+
+  // 性格解读
+  document.getElementById('result-description').textContent = personality.desc;
+
+  // 关键词标签
+  document.getElementById('result-tags').innerHTML =
+    personality.tags.map(tag => `<span class="result-tag">${tag}</span>`).join('');
+}
+
+
+/* ===== 11. localStorage 读写 ===== */
+const STORAGE_KEY = 'personality_test_result';
+
+function saveToStorage(data) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch(e) {
+    console.warn('localStorage 保存失败:', e);
+  }
+}
+
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) {
+    return null;
+  }
+}
+
+
+/* ===== 12. 重新测试 ===== */
+function resetTest() {
+  // 重置内存状态（answers 清空、索引归零、锁释放）
+  currentQuestionIndex = 0;
+  answers = [];
+  isTransitioning = false;
+  // 注意：不清除 localStorage —— 下次完成测试时会自动覆盖，
+  // 且结果页需要旧数据来显示"上次测试时间"
+
+  showPage('page-welcome');
+  showLastTestOnWelcome();
+}
+
+
+/* ===== 13. 首页显示上次测试记录 ===== */
+function showLastTestOnWelcome() {
+  const data = loadFromStorage();
+  const el = document.getElementById('welcome-last-test');
+  if (data && data.timestamp) {
+    const dt = new Date(data.timestamp);
+    const fmt = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+    el.textContent = `上次测试：${data.type} · ${fmt}`;
+  } else {
+    el.textContent = '';
+  }
+}
+
+
+/* ===== 14. 后端密码验证 + JWT 认证 =====
+   密码验证在后端 API /api/verify-password 进行，
+   前端不存储任何密码，只保存后端签发的 JWT token。
+   每个 JWT 有效期 7 天，包含用户标签信息。
+   源码中不含任何密码，查看前端代码无法获取访问密码。
+*/
+
+// 显示用户标签徽章
+function displayUserTag(tag) {
+  const badge = document.getElementById('user-tag-badge');
+  if (tag) {
+    badge.textContent = '\u{1F464} ' + tag;
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// 提交密码 → 调用后端 API 验证
+async function submitPassword() {
+  const input = document.getElementById('auth-password-input');
+  const errorEl = document.getElementById('auth-error');
+  const btn = document.querySelector('#page-auth .btn-primary');
+
+  // 禁用按钮，防止重复提交
+  btn.disabled = true;
+  btn.textContent = '验证中…';
+  errorEl.classList.remove('show');
+
+  try {
+    // 调用后端验证接口
+    const response = await fetch('/api/verify-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: input.value })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      // 验证成功 → 存储 JWT token 和用户标签
+      localStorage.setItem('auth_token', data.token);
+      localStorage.setItem('user_tag', data.userTag);
+
+      // 进入首页
+      input.value = '';
+      showPage('page-welcome');
+      showLastTestOnWelcome();
+      displayUserTag(data.userTag);
+    } else {
+      // 验证失败 → 显示错误 + 抖动反馈
+      errorEl.textContent = data.message || '密码不正确，请重新输入';
+      errorEl.classList.add('show');
+      input.value = '';
+      input.focus();
+      shakeAuthCard();
+    }
+  } catch (err) {
+    // 网络错误
+    errorEl.textContent = '网络错误，请检查连接后重试';
+    errorEl.classList.add('show');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '进入';
+  }
+}
+
+// 密码错误时的抖动动画
+function shakeAuthCard() {
+  const authCard = document.getElementById('page-auth');
+  authCard.style.animation = 'none';
+  setTimeout(() => { authCard.style.animation = 'shake 0.4s ease'; }, 10);
+}
+
+// 退出登录 — 清除 JWT，返回密码页
+function logout() {
+  localStorage.removeItem('auth_token');
+  localStorage.removeItem('user_tag');
+  showPage('page-auth');
+  setTimeout(() => document.getElementById('auth-password-input').focus(), 300);
+}
+
+
+/* ===== 15. 初始化 — 检查已有 JWT 是否有效 ===== */
+async function init() {
+  const token = localStorage.getItem('auth_token');
+
+  if (token) {
+    // 尝试用已有 JWT 调用 /api/me 验证有效性
+    try {
+      const response = await fetch('/api/me', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          // JWT 有效 → 直接进入首页，无需重新输入密码
+          showPage('page-welcome');
+          showLastTestOnWelcome();
+          displayUserTag(data.userTag);
+          return;
+        }
+      }
+    } catch (err) {
+      // 网络错误，静默处理，继续显示密码页
+    }
+  }
+
+  // 没有 JWT 或 JWT 已过期 → 清除残留数据，显示密码页
+  localStorage.removeItem('auth_token');
+  localStorage.removeItem('user_tag');
+  showPage('page-auth');
+  setTimeout(() => document.getElementById('auth-password-input').focus(), 300);
+}
+
+// 脚本加载后立即执行初始化
+init();
+</script>
+</body>
+</html>
