@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "index.html", "use": "@vercel/static" },
+    { "src": "api/verify-password.js", "use": "@vercel/node" },
+    { "src": "api/me.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/api/verify-password", "dest": "/api/verify-password.js" },
+    { "src": "/api/me", "dest": "/api/me.js" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
+}
